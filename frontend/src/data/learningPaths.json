@@ -16,11 +16,7 @@
     "slug": "dsa",
     "description": "Master problem solving, data structures, and algorithms.",
     "topics": [
-      "Arrays & Strings",
-      "Linked List",
-      "Stack & Queue",
-      "Trees & Graphs",
-      "Dynamic Programming"
+      "Arrays"
     ]
   },
   {
