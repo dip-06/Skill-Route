@@ -1,6 +1,15 @@
+import { useState } from "react"
 import { useParams, useSearchParams, Link } from "react-router-dom"
 import paths from "../data/learningPaths.json"
 import dsaLearningPath from "../data/dsaLearningPath"
+
+function toggleOpenId(id, setState) {
+  setState(previousIds => (
+    previousIds.includes(id)
+      ? previousIds.filter(previousId => previousId !== id)
+      : [...previousIds, id]
+  ))
+}
 
 function NonDsaPathDetail({ path }) {
   return (
@@ -21,8 +30,16 @@ function NonDsaPathDetail({ path }) {
 export default function LearningPathDetail() {
   const { slug } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
+  const [openPhaseIds, setOpenPhaseIds] = useState([])
+  const [openSectionIds, setOpenSectionIds] = useState([])
+  const selectedTopicId = searchParams.get("topic")
+  const selectedTopic = dsaLearningPath.topics.find(topic => topic.id === selectedTopicId)
+  const selectedContent = selectedTopic ? dsaLearningPath.content[selectedTopic.id] : null
 
   const path = paths.find(item => item.slug === slug)
+
+  const isPhaseOpen = phaseId => openPhaseIds.includes(phaseId)
+  const isSectionOpen = sectionId => openSectionIds.includes(sectionId)
 
   if (!path) {
     return <p className="p-10">Path not found</p>
@@ -31,10 +48,6 @@ export default function LearningPathDetail() {
   if (path.slug !== "dsa") {
     return <NonDsaPathDetail path={path} />
   }
-
-  const selectedTopicId = searchParams.get("topic")
-  const selectedTopic = dsaLearningPath.topics.find(topic => topic.id === selectedTopicId)
-  const selectedContent = selectedTopic ? dsaLearningPath.content[selectedTopic.id] : null
 
   return (
     <div className="space-y-6 md:space-y-8 p-4 md:p-10 transition-colors">
@@ -88,37 +101,72 @@ export default function LearningPathDetail() {
           </div>
 
           <div className="space-y-5">
-            {selectedContent.phases.map(phase => (
-              <article key={phase.id} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/40 p-5 shadow-sm dark:shadow-none transition-colors">
-                <h3 className="mb-4 text-xl font-semibold text-cyan-600 dark:text-cyan-200 transition-colors">{phase.title}</h3>
+            {selectedContent.phases.map(phase => {
+              const phaseOpen = isPhaseOpen(phase.id)
+              return (
+                <article key={phase.id} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/40 p-5 shadow-sm dark:shadow-none transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => toggleOpenId(phase.id, setOpenPhaseIds)}
+                    aria-expanded={phaseOpen}
+                    className="w-full flex items-center justify-between gap-4 text-left"
+                  >
+                    <h3 className="text-xl font-semibold text-cyan-600 dark:text-cyan-200 transition-colors">{phase.title}</h3>
+                    <span className="shrink-0 rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 transition-colors">
+                      {phaseOpen ? "Hide phase" : "Show phase"}
+                    </span>
+                  </button>
 
-                <div className="space-y-4">
-                  {phase.sections.map((section, sectionIndex) => (
-                    <div key={`${phase.id}-section-${sectionIndex}`}>
-                      <h4 className="mb-2 font-semibold text-gray-900 dark:text-white transition-colors">{section.heading}</h4>
-                      <ul className="list-inside list-disc space-y-1 text-gray-700 dark:text-gray-300 transition-colors">
-                        {section.points.map((point, pointIndex) => (
-                          <li key={`${phase.id}-point-${sectionIndex}-${pointIndex}`}>
-                            <Link
-                              to={`/dsa/${selectedTopic.id}/${point.id}`}
-                              className="text-cyan-600 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300 hover:underline transition-colors block py-0.5"
-                            >
-                              {point.title}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
+                  {phaseOpen && (
+                    <>
+                      <div className="mt-4 space-y-3">
+                        {phase.sections.map((section, sectionIndex) => {
+                          const sectionId = `${phase.id}-section-${sectionIndex}`
+                          const sectionOpen = isSectionOpen(sectionId)
 
-                {phase.note && (
-                  <p className="mt-4 rounded-lg border border-cyan-200 dark:border-cyan-900 bg-cyan-50 dark:bg-cyan-950/40 p-3 text-sm text-cyan-800 dark:text-cyan-100 transition-colors">
-                    <span className="font-semibold">Mindset:</span> {phase.note}
-                  </p>
-                )}
-              </article>
-            ))}
+                          return (
+                            <div key={sectionId} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 transition-colors">
+                              <button
+                                type="button"
+                                onClick={() => toggleOpenId(sectionId, setOpenSectionIds)}
+                                aria-expanded={sectionOpen}
+                                className="w-full flex items-center justify-between gap-4 px-4 py-3 text-left"
+                              >
+                                <h4 className="font-semibold text-gray-900 dark:text-white transition-colors">{section.heading}</h4>
+                                <span className="shrink-0 rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 transition-colors">
+                                  {sectionOpen ? "Hide topics" : "Show topics"}
+                                </span>
+                              </button>
+
+                              {sectionOpen && (
+                                <ul className="list-inside list-disc space-y-1 px-4 pb-4 pt-1 text-gray-700 dark:text-gray-300 transition-colors">
+                                  {section.points.map((point, pointIndex) => (
+                                    <li key={`${phase.id}-point-${sectionIndex}-${pointIndex}`}>
+                                      <Link
+                                        to={`/dsa/${selectedTopic.id}/${point.id}`}
+                                        className="text-cyan-600 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300 hover:underline transition-colors block py-0.5"
+                                      >
+                                        {point.title}
+                                      </Link>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {phase.note && (
+                        <p className="mt-4 rounded-lg border border-cyan-200 dark:border-cyan-900 bg-cyan-50 dark:bg-cyan-950/40 p-3 text-sm text-cyan-800 dark:text-cyan-100 transition-colors">
+                          <span className="font-semibold">Mindset:</span> {phase.note}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </article>
+              )
+            })}
           </div>
         </section>
       ) : (
