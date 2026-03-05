@@ -22,8 +22,9 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto flex justify-between items-center w-full">
         
         {/* Logo */}
-        <Link to="/" onClick={closeMenu}>
-          <h1 className="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400">
+        <Link to="/" onClick={closeMenu} className="flex">
+        <img src="../../logo.png" alt=""  className="h-[50px] w-[50px] pr-1"/>
+          <h1 className="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400 py-2">
             SkillRoute
           </h1>
         </Link>
